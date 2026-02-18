@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+
+  schema-server:
+    build: ./schema-server
+    container_name: schema-server
+    command: ["python", "main.py", "--schema-dir", "/data/schemas", "--listen", "0.0.0.0:5001"]
+    volumes:
+      - ./data/schemas:/data/schemas:ro
+    ports:
+      - "5001:5001"
+    restart: always
+
+  values-server:
+    build: ./values-server
+    container_name: values-server
+    command: ["python", "main.py", "--values-dir", "/data/values", "--listen", "0.0.0.0:5002"]
+    volumes:
+      - ./data/values:/data/values:ro
+    ports:
+      - "5002:5002"
+    restart: always
+
+  bot-server:
+    build: ./bot-server
+    container_name: bot-server
+    command: ["python", "main.py", "--listen", "0.0.0.0:5003"]
+    environment:
+      - SCHEMA_SERVICE_URL=http://schema-server:5001
+      - VALUES_SERVICE_URL=http://values-server:5002
+      - OLLAMA_URL=http://host.docker.internal:11434
+    depends_on:
+      - schema-server
+      - values-server
+    ports:
+      - "5003:5003"
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  
+
